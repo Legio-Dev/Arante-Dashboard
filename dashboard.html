@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Aranet</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
+    <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.js"></script>
+    <style>
+        .chart-container {
+            position: relative;
+            margin: auto;
+            min-height: 200px;
+            max-width: 100%;
+        }
+
+        .sensor{
+            height: 50px;
+            width: 50px;
+            background-color: green;
+            border-radius: 50%;
+            border: 1px solid #bbb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            cursor: pointer;
+            margin: 5px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="container">
+            <div class="row m-3">
+                <div class="col-4 mb-2">
+                    <label for="timeInput">Tiempo</label>
+                    <input class="form-control" type="text" id="timeInput" disabled>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-header">
+                            <p>Mapa de Legio</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-2" style="border-right: 1px solid grey;">
+                                    <div class="sensor draggable" data-bs-toggle="tooltip" data-bs-title="Default tooltip" id="patioDiv">
+                                        <p style="margin: 0; padding: 0; font-size: smaller;" id="Patio">- °C</p>
+                                    </div>
+                                    <div class="sensor draggable" data-bs-toggle="tooltip" data-bs-title="Default tooltip" id="reunionesDiv">
+                                        <p style="margin: 0; padding: 0; font-size: smaller;" id="Reuniones">- °C</p>
+                                    </div>
+                                    <div class="sensor draggable" data-bs-toggle="tooltip" data-bs-title="Default tooltip" id="comedorDiv">
+                                        <p style="margin: 0; padding: 0; font-size: smaller;" id="Comedor">- °C</p>
+                                    </div>
+                                    <div class="sensor draggable" data-toggle="tooltip" data-bs-title="Default tooltip" id="novDiv">
+                                        <p style="margin: 0; padding: 0; font-size: smaller;" id="NOC">- °C</p>
+                                    </div>
+                                    <div class="sensor draggable" data-toggle="tooltip" data-bs-title="Default tooltip" id="bodegaDiv">
+                                        <p style="margin: 0; padding: 0; font-size: smaller;" id="Bodega">- °C</p>
+                                    </div>
+                                    <div class="sensor draggable" data-toggle="tooltip" data-bs-title="Default tooltip" id="techDiv">
+                                        <p style="margin: 0; padding: 0; font-size: smaller;" id="Tech">- °C</p>
+                                    </div>
+                                </div>
+                                <div class="col-md d-flex justify-content-center">
+                                    <img src="./img/mapa_legio.png" alt="mapa Legio" width="450" height="300">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer" style="text-align: end;">
+                            <button class="btn btn-secondary" onclick="saveSensorPositions()">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row m-3">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-header">
+                            <p>Temperatura °C</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="tempChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row m-3">
+                <div class="col-md mb-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <p>Humedad %</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="chartHum"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row m-3">
+                <div class="col-md mb-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <p>C02 ppm</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="chartC02"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row m-3">
+                <div class="col-md mb-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <p>Presión Atmosférica pHa</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="chartATM"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="./js/Dragdrop.js"></script>
+    <script src="./js/Event.js"></script>
+    <script>
+        /* DOM Elements */
+        const patio = document.getElementById('Patio');
+        const reuniones = document.getElementById('Reuniones');
+        const comedor = document.getElementById('Comedor');
+        const noc = document.getElementById('NOC');
+        const bodega = document.getElementById('Bodega');
+        const tech = document.getElementById('Tech');
+        const patioDiv = document.getElementById('patioDiv');
+        const reunionesDiv = document.getElementById('reunionesDiv');
+        const comedorDiv = document.getElementById('comedorDiv');
+        const novDiv = document.getElementById('novDiv');
+        const bodegaDiv = document.getElementById('bodegaDiv');
+        const techDiv = document.getElementById('techDiv');
+         /* charts */
+        const tempChart = document.getElementById('tempChart');
+        const chartHum = document.getElementById('chartHum');
+        const chartCo2 = document.getElementById('chartC02');
+        const chartATM = document.getElementById('chartATM');
+        /* data */
+        //temperatura °C
+        const patioTemp = [];
+        const reuTemp = [];
+        const comedorTemp = [];
+        const NOCTemp = [];
+        const bodegaTemp = [];
+        const techTemp = [];
+        //Humedad %
+        const patioHum = [];
+        const reuHum = [];
+        const comedorHum = [];
+        const NOCHum = [];
+        const bodegaHum = [];
+        const techHum = [];
+        //CO2 ppm
+        const bodegaCO2 = [];
+        const techCO2 = [];
+        //Presion atmosferica hPa
+        const bodegaATM = [];
+        const techATM = [];
+
+        /* Temperatura */
+        const labelsTemp = [];
+        const dataTemp = {
+            labels: labelsTemp,
+            datasets:[
+                {
+                    label: "Patio",
+                    backgroundColor: 'rgb(248,168,26)',
+                    borderColor: 'rgb(248,168,26)',
+                    data: patioTemp
+                },{
+                    label: "Sala Reuniones",
+                    backgroundColor: 'rgb(247, 109, 134)',
+                    borderColor: 'rgb(247, 109, 134)',
+                    data: reuTemp 
+                },{
+                    label: "Comedor",
+                    backgroundColor: 'rgb(237, 88, 51)',
+                    borderColor: 'rgb(237, 88, 51)',
+                    data: comedorTemp
+                },{
+                    label: "NOC",
+                    backgroundColor: 'rgb(97, 172, 201)',
+                    borderColor: 'rgb(97, 172, 201)',
+                    data: NOCTemp
+                },{
+                    label: "Bodega",
+                    backgroundColor: 'rgb(16, 103, 155)',
+                    borderColor: 'rgb(16, 103, 155)',
+                    data: bodegaTemp
+                },{
+                    label: "Tech",
+                    backgroundColor: 'rgb(242, 214, 147)',
+                    borderColor: 'rgb(242, 214, 147)',
+                    data: techTemp
+                }
+            ]
+        };
+
+        const tempConfig = {
+            type: 'line',
+            data: dataTemp,
+            options: {
+                interaction:{
+                    intersect: false
+                },
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        border: {
+                        display: true
+                        },
+                        grid: {
+                        color: "#F2F2F2"
+                        }
+                    },
+                    y: {
+                        border: {
+                        display: false  
+                        },
+                        grid: {
+                        color: "#FFFFFF",
+                        }
+                    }
+                }
+            }
+        };
+
+        const canvaTemp = new Chart(
+            tempChart, tempConfig
+        );
+
+        async function getTempOfSensors(){
+            const date = new Date();
+            try {
+                const responsePatio = await fetch('https://aranet.cloud/api/v1/measurements/last?sensor=1052056&metric=1',{
+                    method: 'GET',
+                    headers:{
+                        'Accept': 'application/json',
+                        'ApiKey': 'pcx8tuhggs9p22f84phfbkz8vqn29brn'
+                    }
+                });
+                const patioData = await responsePatio.json();
+                //
+                const responseReu = await fetch('https://aranet.cloud/api/v1/telemetry/last?sensor=1052301&metric=1',{
+                    method: 'GET',
+                    headers:{
+                        'Accept': 'application/json',
+                        'ApiKey': 'pcx8tuhggs9p22f84phfbkz8vqn29brn'
+                    }
+                });
+                const dataReu = await responseReu.json();
+                //
+                const responseComedor = await fetch('https://aranet.cloud/api/v1/measurements/last?sensor=1052309&metric=1',{
+                    method: 'GET',
+                    headers:{
+                        'Accept': 'application/json',
+                        'ApiKey': 'pcx8tuhggs9p22f84phfbkz8vqn29brn'
+                    }
+                });
+                const dataComedor = await responseComedor.json();
+                //
+                const responseNOC = await fetch('https://aranet.cloud/api/v1/measurements/last?sensor=1052290&metric=1',{
+                    method: 'GET',
+                    headers:{
+                        'Accept': 'application/json',
+                        'ApiKey': 'pcx8tuhggs9p22f84phfbkz8vqn29brn'
+                    }
+                });
+                const dataNOC = await responseNOC.json();
+                //
+                const responseBodega = await fetch('https://aranet.cloud/api/v1/measurements/last?sensor=4205085&metric=1',{
+                    method: 'GET',
+                    headers:{
+                        'Accept': 'application/json',
+                        'ApiKey': 'pcx8tuhggs9p22f84phfbkz8vqn29brn'
+                    }
+                });
+                const dataBodega = await responseBodega.json();
+                //
+                const responseTech = await fetch('https://aranet.cloud/api/v1/measurements/last?sensor=4207756&metric=1',{
+                    method: 'GET',
+                    headers:{
+                        'Accept': 'application/json',
+                        'ApiKey': 'pcx8tuhggs9p22f84phfbkz8vqn29brn'
+                    }
+                });
+                const dataTech = await responseTech.json();
+                //
+                patioTemp.push(patioData.readings[0].value);
+                reuTemp.push(dataReu.readings[0].value);
+                comedorTemp.push(dataComedor.readings[0].value);
+                NOCTemp.push(dataNOC.readings[0].value);
+                bodegaTemp.push(dataBodega.readings[0].value);
+                techTemp.push(dataTech.readings[0].value);
+                //update sensors values
+                patio.innerHTML = patioData.readings[0].value + "°C";
+                patioDiv.style.backgroundColor = "rgba(0, 150, 0, "+patioData.readings[0].value / 35+")";
+                reuniones.innerHTML = dataReu.readings[0].value + "°C";
+                reunionesDiv.style.backgroundColor = "rgba(0, 150, 0, "+dataReu.readings[0].value / 35+")";
+                comedor.innerHTML = dataComedor.readings[0].value + "°C";
+                comedorDiv.style.backgroundColor = "rgba(0, 150, 0, "+dataComedor.readings[0].value / 35+")";
+                noc.innerHTML = dataNOC.readings[0].value + "°C";
+                novDiv.style.backgroundColor = "rgba(0, 150, 0, "+dataNOC.readings[0].value / 35+")";
+                bodega.innerHTML = dataBodega.readings[0].value + "°C";
+                bodegaDiv.style.backgroundColor = "rgba(0, 150, 0, "+dataBodega.readings[0].value / 35+")";
+                tech.innerHTML = dataTech.readings[0].value + "°C";
+                techDiv.style.backgroundColor = "rgba(0, 150, 0, "+dataTech.readings[0].value / 35+")";
+
+                if(patioTemp.length >= 60 || reuTemp.length >= 60 || comedorTemp.length >= 60 || NOCTemp.length >= 60 || bodegaTemp.length >= 60 || techTemp.length >= 60){
+                    canvaTemp.data.labels.shift();
+                    patioTemp.shift();
+                    reuTemp.shift();
+                    comedorTemp.shift();
+                    NOCTemp.shift();
+                    bodegaTemp.shift();
+                    techTemp.shift();
+                }
+                //update chart
+                canvaTemp.data.labels.push(date.toLocaleTimeString().slice(0,5));
+                canvaTemp.update();
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+        /* Humedad */
+        const labelsHum = [];
+        const dataHum = {
+            labels: labelsHum,
+            datasets:[
+                {
+                    label: "Patio",
+                    backgroundColor: 'rgb(87, 12, 106)',
+                    borderColor: 'rgb(87, 12, 106)',
+                    data: patioHum
+                },{
+                    label: "Sala Reuniones",
+                    backgroundColor: 'rgb(35, 12, 106)',
+                    borderColor: 'rgb(35, 12, 106)',
+                    data: reuHum 
+                },{
+                    label: "Comedor",
+                    backgroundColor: 'rgb(21, 49, 188)',
+                    borderColor: 'rgb(21, 49, 188)',
+                    data: comedorHum
+                },{
+                    label: "NOC",
+                    backgroundColor: 'rgb(77, 25, 230)',
+                    borderColor: 'rgb(77, 25, 230)',
+                    data: NOCHum
+                },{
+                    label: "Bodega",
+                    backgroundColor: 'rgb(149, 165, 243)',
+                    borderColor: 'rgb(149, 165, 243)',
+                    data: bodegaHum
+                },{
+                    label: "Tech",
+                    backgroundColor: 'rgb(155, 21, 188)',
+                    borderColor: 'rgb(155, 21, 188)',
+                    data: techHum
+                }
+            ]
+        };
+
+        const humConfig = {
+            type: 'line',
+            data: dataHum,
+            options: {
+                interaction:{
+                    intersect: false
+                },
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        border: {
+                        display: true
+                        },
+                        grid: {
+                        color: "#F2F2F2"
+                        }
+                    },
+                    y: {
+                        border: {
+                        display: false  
+                        },
+                        grid: {
+                        color: "#FFFFFF",
+                        }
+                    }
+                }
+            }
+        };
+
+        const canvaHum = new Chart(
+            chartHum, humConfig
+        );
+
+        async function getHumOfSensors(){
+            const date = new Date();
+            try {
+                const responsePatio = await fetch('https://aranet.cloud/api/v1/measurements/last?sensor=1052056&metric=2',{
+                    method: 'GET',
+                    headers:{
+                        'Accept': 'application/json',
+                        'ApiKey': 'pcx8tuhggs9p22f84phfbkz8vqn29brn'
+                    }
+                });
+                const patioData = await responsePatio.json();
+                //
+                const responseReu = await fetch('https://aranet.cloud/api/v1/telemetry/last?sensor=1052301&metric=2',{
+                    method: 'GET',
+                    headers:{
+                        'Accept': 'application/json',
+                        'ApiKey': 'pcx8tuhggs9p22f84phfbkz8vqn29brn'
+                    }
+                });
+                const dataReu = await responseReu.json();
+                //
+                const responseComedor = await fetch('https://aranet.cloud/api/v1/measurements/last?sensor=1052309&metric=2',{
+                    method: 'GET',
+                    headers:{
+                        'Accept': 'application/json',
+                        'ApiKey': 'pcx8tuhggs9p22f84phfbkz8vqn29brn'
+                    }
+                });
+                const dataComedor = await responseComedor.json();
+                //
+                const responseNOC = await fetch('https://aranet.cloud/api/v1/measurements/last?sensor=1052290&metric=2',{
+                    method: 'GET',
+                    headers:{
+                        'Accept': 'application/json',
+                        'ApiKey': 'pcx8tuhggs9p22f84phfbkz8vqn29brn'
+                    }
+                });
+                const dataNOC = await responseNOC.json();
+                //
+                const responseBodega = await fetch('https://aranet.cloud/api/v1/measurements/last?sensor=4205085&metric=2',{
+                    method: 'GET',
+                    headers:{
+                        'Accept': 'application/json',
+                        'ApiKey': 'pcx8tuhggs9p22f84phfbkz8vqn29brn'
+                    }
+                });
+                const dataBodega = await responseBodega.json();
+                //
+                const responseTech = await fetch('https://aranet.cloud/api/v1/measurements/last?sensor=4207756&metric=2',{
+                    method: 'GET',
+                    headers:{
+                        'Accept': 'application/json',
+                        'ApiKey': 'pcx8tuhggs9p22f84phfbkz8vqn29brn'
+                    }
+                });
+                const dataTech = await responseTech.json();
+                //
+                patioHum.push(patioData.readings[0].value);
+                reuHum.push(dataReu.readings[0].value);
+                comedorHum.push(dataComedor.readings[0].value);
+                NOCHum.push(dataNOC.readings[0].value);
+                bodegaHum.push(dataBodega.readings[0].value);
+                techHum.push(dataTech.readings[0].value);
+
+                //
+                if(patioHum.length >= 60 || reuHum.length >= 60 || comedorHum.length >= 60 || NOCHum.length >= 60 || bodegaHum.length >= 60 || techHum.length >= 60){
+                    canvaHum.data.labels.shift();
+                    patioHum.shift();
+                    reuHum.shift();
+                    comedorHum.shift();
+                    NOCHum.shift();
+                    bodegaHum.shift();
+                    techHum.shift();
+                }
+                //update chart
+                canvaHum.data.labels.push(date.toLocaleTimeString().slice(0,5));
+                canvaHum.update();
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+        /* CO2 */
+        const labelsCo2 = [];
+        const dataC02 = {
+            labels: labelsCo2,
+            datasets:[
+                {
+                    label: "Bodega",
+                    backgroundColor: 'rgb(16, 147, 108)',
+                    borderColor: 'rgb(16, 147, 108)',
+                    data: bodegaCO2
+                },{
+                    label: "Tech",
+                    backgroundColor: 'rgb(21, 188, 52)',
+                    borderColor: 'rgb(21, 188, 52)',
+                    data: techCO2 
+                }
+            ]
+        };
+
+        const co2Config = {
+            type: 'line',
+            data: dataC02,
+            options: {
+                interaction:{
+                    intersect: false
+                },
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        border: {
+                        display: true
+                        },
+                        grid: {
+                        color: "#F2F2F2"
+                        }
+                    },
+                    y: {
+                        border: {
+                        display: false  
+                        },
+                        grid: {
+                        color: "#FFFFFF",
+                        }
+                    }
+                }
+            }
+        };
+
+        const canvaCO2 = new Chart(
+            chartCo2, co2Config
+        );
+
+        async function getCO2OfSensors(){
+            const date = new Date();
+            try {
+                
+                const responseBodega = await fetch('https://aranet.cloud/api/v1/telemetry/last?sensor=4205085&metric=3',{
+                    method: 'GET',
+                    headers:{
+                        'Accept': 'application/json',
+                        'ApiKey': 'pcx8tuhggs9p22f84phfbkz8vqn29brn'
+                    }
+                });
+                const dataBodega = await responseBodega.json();
+                //
+                const responseTech = await fetch('https://aranet.cloud/api/v1/telemetry/last?sensor=4207756&metric=3',{
+                    method: 'GET',
+                    headers:{
+                        'Accept': 'application/json',
+                        'ApiKey': 'pcx8tuhggs9p22f84phfbkz8vqn29brn'
+                    }
+                });
+                const dataTech = await responseTech.json();
+                //
+                bodegaCO2.push(dataBodega.readings[0].value);
+                techCO2.push(dataTech.readings[0].value);
+                //
+                if(bodegaCO2.length >= 60 || techCO2.length >= 60){
+                    canvaCO2.data.labels.shift();
+                    bodegaCO2.shift();
+                    techCO2.shift();
+                }
+                //update chart
+                canvaCO2.data.labels.push(date.toLocaleTimeString().slice(0,5));
+                canvaCO2.update();
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+        /* Presion atmosferica */
+        const labelsATM = [];
+        const dataATM = {
+            labels: labelsATM,
+            datasets:[
+                {
+                    label: "Bodega",
+                    backgroundColor: 'rgb(128, 128, 128)',
+                    borderColor: 'rgb(128, 128, 128)',
+                    data: bodegaATM
+                },{
+                    label: "Tech",
+                    backgroundColor: 'rgb(59, 59, 59)',
+                    borderColor: 'rgb(59, 59, 59)',
+                    data: techATM 
+                }
+            ]
+        };
+
+        const ATMConfig = {
+            type: 'line',
+            data: dataATM,
+            options: {
+                interaction:{
+                    intersect: false
+                },
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        border: {
+                        display: true
+                        },
+                        grid: {
+                        color: "#F2F2F2"
+                        }
+                    },
+                    y: {
+                        border: {
+                        display: false  
+                        },
+                        grid: {
+                        color: "#FFFFFF",
+                        }
+                    }
+                }
+            }
+        };
+
+        const canvaATM = new Chart(
+            chartATM, ATMConfig
+        );
+
+        async function getATMOfSensors(){
+            const date = new Date();
+            try {
+                
+                const responseBodega = await fetch('https://aranet.cloud/api/v1/telemetry/last?sensor=4205085&metric=4',{
+                    method: 'GET',
+                    headers:{
+                        'Accept': 'application/json',
+                        'ApiKey': 'pcx8tuhggs9p22f84phfbkz8vqn29brn'
+                    }
+                });
+                const dataBodega = await responseBodega.json();
+                //
+                const responseTech = await fetch('https://aranet.cloud/api/v1/telemetry/last?sensor=4207756&metric=4',{
+                    method: 'GET',
+                    headers:{
+                        'Accept': 'application/json',
+                        'ApiKey': 'pcx8tuhggs9p22f84phfbkz8vqn29brn'
+                    }
+                });
+                const dataTech = await responseTech.json();
+                //
+                bodegaATM.push(dataBodega.readings[0].value);
+                techATM.push(dataTech.readings[0].value);
+
+                if(bodegaATM.length >= 60 || techATM.length >= 60){
+                    canvaATM.data.labels.shift();
+                    bodegaATM.shift();
+                    techATM.shift();
+                }
+                //update chart
+                canvaATM.data.labels.push(date.toLocaleTimeString().slice(0,5));
+                canvaATM.update();
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+        getTempOfSensors();
+        getHumOfSensors();
+        getCO2OfSensors();
+        getATMOfSensors();
+        setInterval(() => {
+            getTempOfSensors();
+            getHumOfSensors();
+            getCO2OfSensors();
+            getATMOfSensors();
+        }, 60000);
+
+        function getSensorsPositions() {
+            patioDiv.style.top = sessionStorage.getItem('patioX') || "70px";
+            patioDiv.style.left = sessionStorage.getItem('patioY') || "10px";
+            reunionesDiv.style.top = sessionStorage.getItem('reuX') || "70px";
+            reunionesDiv.style.left = sessionStorage.getItem('reuY') || "80px";
+            comedorDiv.style.top = sessionStorage.getItem('comedorX') || "140px";
+            comedorDiv.style.left = sessionStorage.getItem('comedorY') || "10px";
+            novDiv.style.top = sessionStorage.getItem('nocX') || "140px";            
+            novDiv.style.left = sessionStorage.getItem('nocY') || "80px";
+            bodegaDiv.style.top = sessionStorage.getItem('bodegaX') || "210px";
+            bodegaDiv.style.left = sessionStorage.getItem('bodegaY') || "10px";
+            techDiv.style.top = sessionStorage.getItem('techX') || "210px";
+            techDiv.style.left = sessionStorage.getItem('techY') || "80px";
+        }
+
+        getSensorsPositions();
+
+        function saveSensorPositions(){
+            sessionStorage.setItem('patioX', patioDiv.style.top);
+            sessionStorage.setItem('patioY', patioDiv.style.left);
+            sessionStorage.setItem('reuX', reunionesDiv.style.top);
+            sessionStorage.setItem('reuY', reunionesDiv.style.left);
+            sessionStorage.setItem('comedorX', comedorDiv.style.top);
+            sessionStorage.setItem('comedorY', comedorDiv.style.left);
+            sessionStorage.setItem('nocX', novDiv.style.top);            
+            sessionStorage.setItem('nocY', novDiv.style.left);
+            sessionStorage.setItem('bodegaX', bodegaDiv.style.top);
+            sessionStorage.setItem('bodegaY', bodegaDiv.style.left);
+            sessionStorage.setItem('techX', techDiv.style.top);
+            sessionStorage.setItem('techY', techDiv.style.left);
+        }
+    </script>
+    <script>
+        const timeInput = document.getElementById('timeInput');
+        
+        setInterval(() => {
+            const time = new Date();
+            timeInput.value = time.toLocaleTimeString();
+        }, 1000);
+
+        let tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        let tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+
+        tippy('#patioDiv', {
+            content: 'Sensor del Patio',
+        });
+        tippy('#reunionesDiv', {
+            content: 'Sensor Sala de Reuniones',
+        });
+        tippy('#comedorDiv', {
+            content: 'Sensor Comedor',
+        });
+        tippy('#novDiv', {
+            content: 'Sensor NOC',
+        });
+        tippy('#bodegaDiv', {
+            content: 'Sensor Bodega',
+        });
+        tippy('#techDiv', {
+            content: 'Sensor de Tech',
+        });
+    </script>
+    <script>
+         "use strict";
+        var evt         = new Event(),
+        dragdrop    = new Dragdrop(evt);
+        
+    </script>
+</body>
+</html>
